@@ -1,4 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+
+// Server-side Supabase client with service role key (fallback to anon key for now)
+const supabaseUrl = 'https://zjnnfyocvlzpxscrjbcw.supabase.co';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqbm5meW9jdmx6cHhzY3JqYmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgzNzUzNzEsImV4cCI6MjA1Mzk1MTM3MX0.mZhqVLPxcaeLb5bAqPF8W-t1Q8mBCJQRMIlMkwmqnrE';
+
+// Use service role key if available, fallback to anon key
+const supabaseKey = serviceRoleKey || anonKey;
+const supabase = createClient(supabaseUrl, supabaseKey);
 import type {
   User,
   InsertUser,
@@ -77,11 +86,7 @@ export interface IStorage {
   updateInvitation(id: string, updates: Partial<Invitation>): Promise<Invitation>;
 }
 
-const supabaseUrl = 'https://zjnnfyocvlzpxscrjbcw.supabase.co';
-// Using the key provided by the user in the previous message
-const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqbm5meW9jdmx6cHhzY3JqYmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgzNzUzNzEsImV4cCI6MjA1Mzk1MTM3MX0.mZhqVLPxcaeLb5bAqPF8W-t1Q8mBCJQRMIlMkwmqnrE';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 export class SupabaseStorage implements IStorage {
   // User operations
