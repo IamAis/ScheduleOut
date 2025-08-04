@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as React from "react";
 import { useLocation } from "wouter";
 import { useAuth, type User } from "@/hooks/useAuth";
 import Navigation from "@/components/layout/Navigation";
@@ -11,7 +12,16 @@ import ProfileManagement from "@/components/profile/ProfileManagement";
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [currentView, setCurrentView] = useState("dashboard");
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, refreshAuth } = useAuth();
+
+  // Check authentication on mount if no user data
+  React.useEffect(() => {
+    if (!user && !isAuthenticated) {
+      refreshAuth().catch(() => {
+        setLocation("/auth");
+      });
+    }
+  }, [user, isAuthenticated, refreshAuth, setLocation]);
 
   if (!isAuthenticated || !user) {
     setLocation("/auth");

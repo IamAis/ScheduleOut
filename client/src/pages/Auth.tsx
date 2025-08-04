@@ -8,20 +8,12 @@ import { Dumbbell } from "lucide-react";
 export default function Auth() {
   const [, setLocation] = useLocation();
   const [isRegistering, setIsRegistering] = useState(false);
-  const { isAuthenticated, isLoading, setAuthData } = useAuth();
+  const { isAuthenticated, setAuthData } = useAuth();
 
   // Redirect if already authenticated
   if (isAuthenticated) {
     setLocation("/dashboard");
     return null;
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
   }
 
   const handleAuthSuccess = (user: User, roleData?: any) => {

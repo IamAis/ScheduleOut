@@ -12,13 +12,13 @@ export interface User {
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  // Enable auth check for proper authentication state management
+  // Disable automatic auth check to prevent spam, only check when explicitly needed
   const { data: authData, isLoading, error } = useQuery({
     queryKey: ["/api/auth/me"],
-    enabled: true, // Enable to check authentication status
+    enabled: false, // Disable automatic checking
     retry: 1,
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false,
     refetchOnReconnect: false,
     refetchInterval: false,
     staleTime: 5 * 60 * 1000,
@@ -41,15 +41,15 @@ export function useAuth() {
   const roleData = authData && typeof authData === 'object' && 'roleData' in authData ? authData.roleData : null;
   const isAuthenticated = !!user && !error;
   
-  // Use actual loading state
-  const finalIsLoading = isLoading;
+  // Since auth check is disabled, don't show loading state unless explicitly checking
+  const finalIsLoading = false;
 
   const logout = () => {
     logoutMutation.mutate();
   };
 
-  const refreshAuth = () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+  const refreshAuth = async () => {
+    return queryClient.fetchQuery({ queryKey: ["/api/auth/me"] });
   };
 
   // Function to set authentication data after login/register
