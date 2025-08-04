@@ -1,13 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Server-side Supabase client with service role key (fallback to anon key for now)
+// Server-side Supabase client with service role key for full access
 const supabaseUrl = 'https://zjnnfyocvlzpxscrjbcw.supabase.co';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqbm5meW9jdmx6cHhzY3JqYmN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgzNzUzNzEsImV4cCI6MjA1Mzk1MTM3MX0.mZhqVLPxcaeLb5bAqPF8W-t1Q8mBCJQRMIlMkwmqnrE';
+const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqbm5meW9jdmx6cHhzY3JqYmN3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTQ1NjgwMywiZXhwIjoyMDY3MDMyODAzfQ.EKfpsRxETHmS8d4ZQXuo8AqZW1BLVJ71nGf1VzJFTX4';
 
-// Use service role key if available, fallback to anon key
-const supabaseKey = serviceRoleKey || anonKey;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, serviceRoleKey);
 import type {
   User,
   InsertUser,
@@ -102,25 +99,46 @@ export class SupabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
+    const response = await fetch(`${supabaseUrl}/rest/v1/users?email=eq.${email}&select=*`, {
+      method: 'GET',
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+      }
+    });
+
+    if (!response.ok) return undefined;
     
-    if (error) return undefined;
-    return data as User;
+    const data = await response.json();
+    return data.length > 0 ? data[0] as User : undefined;
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const { data, error } = await supabase
-      .from('users')
-      .insert(user)
-      .select()
-      .single();
-    
-    if (error) throw new Error(`Failed to create user: ${error.message}`);
-    return data as User;
+    // Use direct HTTP call instead of Supabase client
+    const response = await fetch(`${supabaseUrl}/rest/v1/users`, {
+      method: 'POST',
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        email: user.email,
+        password: user.password,
+        first_name: user.firstName,
+        last_name: user.lastName,
+        user_type: user.userType
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create user: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data[0] as User;
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
@@ -137,15 +155,18 @@ export class SupabaseStorage implements IStorage {
 
   // Authentication
   async verifyUser(email: string, password: string): Promise<User | null> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .eq('password', password)
-      .single();
+    const response = await fetch(`${supabaseUrl}/rest/v1/users?email=eq.${email}&password=eq.${password}&select=*`, {
+      method: 'GET',
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+      }
+    });
+
+    if (!response.ok) return null;
     
-    if (error) return null;
-    return data as User;
+    const data = await response.json();
+    return data.length > 0 ? data[0] as User : null;
   }
 
   // Gym operations
