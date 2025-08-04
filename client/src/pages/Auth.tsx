@@ -8,7 +8,7 @@ import { Dumbbell } from "lucide-react";
 export default function Auth() {
   const [, setLocation] = useLocation();
   const [isRegistering, setIsRegistering] = useState(false);
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, refreshAuth } = useAuth();
 
   // Redirect if already authenticated
   if (isAuthenticated) {
@@ -25,7 +25,11 @@ export default function Auth() {
   }
 
   const handleAuthSuccess = (user: any) => {
-    setLocation("/dashboard");
+    // Refresh authentication state and redirect  
+    refreshAuth();
+    setTimeout(() => {
+      setLocation("/dashboard");
+    }, 100);
   };
 
   return (

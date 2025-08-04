@@ -12,17 +12,16 @@ export interface User {
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  // Temporarily disable auto-check to prevent request spam
-  // Will be re-enabled once database connection is working
+  // Check authentication status automatically
   const { data: authData, isLoading, error } = useQuery({
     queryKey: ["/api/auth/me"],
-    enabled: false, // Disabled until database is working
-    retry: false,
+    enabled: true,
+    retry: 1,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     refetchOnReconnect: false,
-    staleTime: Infinity,
-    gcTime: Infinity,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   const logoutMutation = useMutation({
@@ -45,11 +44,16 @@ export function useAuth() {
     logoutMutation.mutate();
   };
 
+  const refreshAuth = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+  };
+
   return {
     user,
     roleData,
     isAuthenticated,
     isLoading,
     logout,
+    refreshAuth,
   };
 }
