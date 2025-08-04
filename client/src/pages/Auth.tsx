@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, type User } from "@/hooks/useAuth";
 import AuthForm from "@/components/auth/AuthForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dumbbell } from "lucide-react";
@@ -8,7 +8,7 @@ import { Dumbbell } from "lucide-react";
 export default function Auth() {
   const [, setLocation] = useLocation();
   const [isRegistering, setIsRegistering] = useState(false);
-  const { isAuthenticated, isLoading, refreshAuth } = useAuth();
+  const { isAuthenticated, isLoading, setAuthData } = useAuth();
 
   // Redirect if already authenticated
   if (isAuthenticated) {
@@ -24,8 +24,9 @@ export default function Auth() {
     );
   }
 
-  const handleAuthSuccess = (user: any) => {
-    // Directly redirect to dashboard after successful auth
+  const handleAuthSuccess = (user: User, roleData?: any) => {
+    // Update auth state and redirect to dashboard
+    setAuthData(user, roleData);
     setLocation("/dashboard");
   };
 

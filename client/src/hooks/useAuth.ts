@@ -6,19 +6,19 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  userType: string;
+  userType: "coach" | "client" | "gym";
 }
 
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  // Disable automatic auth check to prevent infinite loading
+  // Enable auth check for proper authentication state management
   const { data: authData, isLoading, error } = useQuery({
     queryKey: ["/api/auth/me"],
-    enabled: false, // Disabled to prevent loading loops
-    retry: false,
+    enabled: true, // Enable to check authentication status
+    retry: 1,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     refetchOnReconnect: false,
     refetchInterval: false,
     staleTime: 5 * 60 * 1000,
@@ -37,12 +37,12 @@ export function useAuth() {
   });
 
   // Type safe data access
-  const user = authData && typeof authData === 'object' && 'user' in authData ? authData.user : null;
+  const user = authData && typeof authData === 'object' && 'user' in authData ? authData.user as User : null;
   const roleData = authData && typeof authData === 'object' && 'roleData' in authData ? authData.roleData : null;
   const isAuthenticated = !!user && !error;
   
-  // Since auth check is disabled, never show loading state initially
-  const finalIsLoading = false;
+  // Use actual loading state
+  const finalIsLoading = isLoading;
 
   const logout = () => {
     logoutMutation.mutate();
@@ -52,6 +52,11 @@ export function useAuth() {
     queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
   };
 
+  // Function to set authentication data after login/register
+  const setAuthData = (userData: User, roleData?: any) => {
+    queryClient.setQueryData(["/api/auth/me"], { user: userData, roleData });
+  };
+
   return {
     user,
     roleData,
@@ -59,5 +64,6 @@ export function useAuth() {
     isLoading: finalIsLoading,
     logout,
     refreshAuth,
+    setAuthData,
   };
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, type User } from "@/hooks/useAuth";
 import Navigation from "@/components/layout/Navigation";
 import CoachDashboard from "@/components/dashboard/CoachDashboard";
 import ClientDashboard from "@/components/dashboard/ClientDashboard";

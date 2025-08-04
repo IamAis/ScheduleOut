@@ -22,7 +22,7 @@ type AuthFormData = z.infer<typeof authSchema>;
 
 interface AuthFormProps {
   isRegistering: boolean;
-  onSuccess: (user: any) => void;
+  onSuccess: (user: any, roleData?: any) => void;
 }
 
 export default function AuthForm({ isRegistering, onSuccess }: AuthFormProps) {
@@ -48,7 +48,7 @@ export default function AuthForm({ isRegistering, onSuccess }: AuthFormProps) {
       const result = await response.json();
 
       if (result.user) {
-        onSuccess(result.user);
+        onSuccess(result.user, result.roleData);
         toast({
           title: isRegistering ? "Registration successful" : "Login successful",
           description: `Welcome ${isRegistering ? 'to ScheduleOut' : 'back'}!`,
