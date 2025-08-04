@@ -4,7 +4,9 @@ import { storage } from "./storage";
 import { insertUserSchema, insertExerciseSchema, insertWorkoutPlanSchema, insertInvitationSchema } from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
-import pgSession from "connect-pg-simple";
+import MemoryStore from "memorystore";
+
+const MemoryStoreSession = MemoryStore(session);
 
 // Extend session interface
 declare module "express-session" {
@@ -21,15 +23,12 @@ declare module "express-session" {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session configuration
-  const pgSessionStore = pgSession(session);
-  
+  // Session configuration with MemoryStore (better for Supabase setup)
   app.use(session({
-    store: new pgSessionStore({
-      conString: process.env.DATABASE_URL,
-      tableName: 'user_sessions',
+    store: new MemoryStoreSession({
+      checkPeriod: 86400000, // 24 hours
     }),
-    secret: process.env.SESSION_SECRET || 'default-secret-key',
+    secret: process.env.SESSION_SECRET || 'supabase-fitness-app-secret-key',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -93,15 +92,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/register", async (req, res) => {
     try {
+      console.log("Registration attempt with data:", req.body);
       const userData = insertUserSchema.parse(req.body);
+      console.log("Parsed user data:", userData);
       
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
+      console.log("Existing user check:", existingUser);
       if (existingUser) {
         return res.status(400).json({ message: "User already exists" });
       }
 
+      console.log("Creating user...");
       const user = await storage.createUser(userData);
+      console.log("User created:", user);
 
       // Create role-specific record
       let roleData = null;
@@ -123,7 +127,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ user: req.session.user, roleData });
     } catch (error) {
-      res.status(400).json({ message: "Registration failed" });
+      console.error("Registration error:", error);
+      res.status(400).json({ message: "Registration failed", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
