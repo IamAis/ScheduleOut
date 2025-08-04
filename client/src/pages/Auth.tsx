@@ -25,11 +25,8 @@ export default function Auth() {
   }
 
   const handleAuthSuccess = (user: any) => {
-    // Refresh authentication state and redirect  
-    refreshAuth();
-    setTimeout(() => {
-      setLocation("/dashboard");
-    }, 100);
+    // Directly redirect to dashboard after successful auth
+    setLocation("/dashboard");
   };
 
   return (

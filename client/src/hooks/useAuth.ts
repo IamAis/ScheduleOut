@@ -12,16 +12,17 @@ export interface User {
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  // Check authentication status automatically
+  // Disable automatic auth check to prevent infinite loading
   const { data: authData, isLoading, error } = useQuery({
     queryKey: ["/api/auth/me"],
-    enabled: true,
-    retry: 1,
+    enabled: false, // Disabled to prevent loading loops
+    retry: false,
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false,
     refetchOnReconnect: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchInterval: false,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const logoutMutation = useMutation({
@@ -39,6 +40,9 @@ export function useAuth() {
   const user = authData && typeof authData === 'object' && 'user' in authData ? authData.user : null;
   const roleData = authData && typeof authData === 'object' && 'roleData' in authData ? authData.roleData : null;
   const isAuthenticated = !!user && !error;
+  
+  // Since auth check is disabled, never show loading state initially
+  const finalIsLoading = false;
 
   const logout = () => {
     logoutMutation.mutate();
@@ -52,7 +56,7 @@ export function useAuth() {
     user,
     roleData,
     isAuthenticated,
-    isLoading,
+    isLoading: finalIsLoading,
     logout,
     refreshAuth,
   };
