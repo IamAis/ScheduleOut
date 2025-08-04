@@ -73,6 +73,8 @@ export const exercises = pgTable("exercises", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+
+
 export const workoutPlans = pgTable("workout_plans", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -116,7 +118,7 @@ export const invitations = pgTable("invitations", {
   inviterId: uuid("inviter_id").references(() => users.id).notNull(),
   inviteeEmail: text("invitee_email").notNull(),
   inviteeId: uuid("invitee_id").references(() => users.id),
-  type: text("type").notNull(), // 'coach_to_client', 'gym_to_coach'
+  type: text("type").notNull(), // 'coach_to_client', 'gym_to_coach', 'client_to_coach'
   status: text("status").default("pending"), // 'pending', 'accepted', 'rejected'
   gymId: uuid("gym_id").references(() => gyms.id),
   expiresAt: timestamp("expires_at"),

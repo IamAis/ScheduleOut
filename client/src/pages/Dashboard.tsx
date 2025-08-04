@@ -1,11 +1,10 @@
-import { useState } from "react";
-import * as React from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth, type User } from "@/hooks/useAuth";
 import Navigation from "@/components/layout/Navigation";
-import CoachDashboard from "@/components/dashboard/CoachDashboard";
-import ClientDashboard from "@/components/dashboard/ClientDashboard";
-import GymDashboard from "@/components/dashboard/GymDashboard";
+import CoachDashboard from "./CoachDashboard";
+import ClientDashboard from "./ClientDashboard";
+import GymDashboard from "./GymDashboard";
 import ExerciseLibrary from "@/components/exercise/ExerciseLibrary";
 import ProfileManagement from "@/components/profile/ProfileManagement";
 
@@ -15,7 +14,7 @@ export default function Dashboard() {
   const { user, logout, isAuthenticated, refreshAuth } = useAuth();
 
   // Check authentication on mount if no user data
-  React.useEffect(() => {
+  useEffect(() => {
     if (!user && !isAuthenticated) {
       refreshAuth().catch(() => {
         setLocation("/auth");

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertExerciseSchema, insertWorkoutPlanSchema, insertInvitationSchema } from "@shared/schema";
+import { insertUserSchema, insertExerciseSchema, insertWorkoutPlanSchema, insertInvitationSchema, insertWorkoutSchema, insertWorkoutExerciseSchema } from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -113,6 +113,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roleData = await storage.createCoach({ userId: user.id });
       } else if (user.userType === "client") {
         roleData = await storage.createClient({ userId: user.id });
+      } else if (user.userType === "gym") {
+        // Create a basic gym record for the new gym owner
+        roleData = await storage.createGym({
+          ownerId: user.id,
+          name: `${user.firstName} ${user.lastName}'s Gym`,
+          description: "Welcome to your fitness facility! Update your gym information in the profile section.",
+          address: "",
+          phone: "",
+          email: user.email,
+        });
       }
 
       // Store in session
@@ -307,6 +317,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(invitation);
     } catch (error) {
       res.status(500).json({ message: "Failed to update invitation" });
+    }
+  });
+
+  // Search routes
+  app.get("/api/search/gyms", async (req, res) => {
+    try {
+      const { query } = req.query;
+      const gyms = await storage.searchGyms(query as string);
+      res.json(gyms);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to search gyms" });
+    }
+  });
+
+  app.get("/api/search/coaches", async (req, res) => {
+    try {
+      const { query } = req.query;
+      const coaches = await storage.searchCoaches(query as string);
+      res.json(coaches);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to search coaches" });
+    }
+  });
+
+  // Profile update routes
+  app.patch("/api/profile/gym/:id", async (req, res) => {
+    try {
+      const { description } = req.body;
+      const gym = await storage.updateGym(req.params.id, { description });
+      res.json(gym);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update gym profile" });
+    }
+  });
+
+  app.patch("/api/profile/coach/:id", async (req, res) => {
+    try {
+      const { bio, specialization, experience } = req.body;
+      const updates = { bio, specialization, experience };
+      const user = await storage.updateUser(req.params.id, updates);
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update coach profile" });
+    }
+  });
+
+  // Gym management routes
+  app.get("/api/gyms", async (req, res) => {
+    try {
+      const gyms = await storage.getAllGyms();
+      res.json(gyms);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch gyms" });
+    }
+  });
+
+  app.get("/api/coaches", async (req, res) => {
+    try {
+      const coaches = await storage.getAllCoaches();
+      res.json(coaches);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch coaches" });
+    }
+  });
+
+  // Workout creation routes for coaches
+  app.post("/api/workouts", async (req, res) => {
+    try {
+      const workoutData = insertWorkoutSchema.parse(req.body);
+      const workout = await storage.createWorkout(workoutData);
+      res.json(workout);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to create workout" });
+    }
+  });
+
+  app.post("/api/workout-exercises", async (req, res) => {
+    try {
+      const exerciseData = insertWorkoutExerciseSchema.parse(req.body);
+      const workoutExercise = await storage.createWorkoutExercise(exerciseData);
+      res.json(workoutExercise);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to add exercise to workout" });
+    }
+  });
+
+  // User-specific data routes
+  app.get("/api/coaches/user/:userId", async (req, res) => {
+    try {
+      const coach = await storage.getCoachByUserId(req.params.userId);
+      res.json(coach);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch coach data" });
+    }
+  });
+
+  app.get("/api/clients/user/:userId", async (req, res) => {
+    try {
+      const client = await storage.getClientByUserId(req.params.userId);
+      res.json(client);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch client data" });
+    }
+  });
+
+  app.get("/api/gyms/owner/:ownerId", async (req, res) => {
+    try {
+      const gyms = await storage.getGymsByOwner(req.params.ownerId);
+      res.json(gyms.length > 0 ? gyms[0] : null);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch gym data" });
     }
   });
 

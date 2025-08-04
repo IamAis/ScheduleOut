@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth, type User } from "@/hooks/useAuth";
 import AuthForm from "@/components/auth/AuthForm";
@@ -10,16 +10,23 @@ export default function Auth() {
   const [isRegistering, setIsRegistering] = useState(false);
   const { isAuthenticated, setAuthData } = useAuth();
 
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    setLocation("/dashboard");
-    return null;
-  }
+  // Use useEffect to prevent rendering issues
+  useEffect(() => {
+    if (isAuthenticated) {
+      setLocation("/dashboard");
+    }
+  }, [isAuthenticated, setLocation]);
 
-  const handleAuthSuccess = (user: User, roleData?: any) => {
-    // Update auth state and redirect to dashboard
+  const handleAuthSuccess = (user: User, roleData?: any, isNewUser?: boolean) => {
+    // Update auth state and redirect appropriately
     setAuthData(user, roleData);
-    setLocation("/dashboard");
+    
+    // If it's a new user registration, show welcome page
+    if (isNewUser) {
+      setLocation("/welcome");
+    } else {
+      setLocation("/dashboard");
+    }
   };
 
   return (

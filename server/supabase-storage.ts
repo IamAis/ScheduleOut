@@ -73,6 +73,21 @@ export interface IStorage {
 
   // Workout Exercise operations
   createWorkoutExercise(workoutExercise: InsertWorkoutExercise): Promise<WorkoutExercise>;
+
+  // Invitation operations
+  createInvitation(invitation: InsertInvitation): Promise<Invitation>;
+  getInvitationsByInviter(inviterId: string): Promise<Invitation[]>;
+  getInvitationsByInvitee(inviteeEmail: string): Promise<Invitation[]>;
+  updateInvitation(id: string, updates: Partial<Invitation>): Promise<Invitation>;
+
+  // Search operations
+  searchGyms(query: string): Promise<Gym[]>;
+  searchCoaches(query: string): Promise<Coach[]>;
+
+  // Additional operations
+  getAllGyms(): Promise<Gym[]>;
+  getAllCoaches(): Promise<Coach[]>;
+  updateGym(id: string, updates: Partial<Gym>): Promise<Gym>;
   getWorkoutExercises(workoutId: string): Promise<WorkoutExercise[]>;
 
   // Invitation operations
@@ -507,6 +522,138 @@ export class SupabaseStorage implements IStorage {
     
     if (error) throw new Error(`Failed to update invitation: ${error.message}`);
     return data as Invitation;
+  }
+
+  // Search operations
+  async searchGyms(query: string): Promise<Gym[]> {
+    if (!query) return this.getAllGyms();
+    
+    const { data, error } = await supabase
+      .from('gyms')
+      .select('*')
+      .or(`name.ilike.%${query}%,description.ilike.%${query}%,address.ilike.%${query}%`)
+      .eq('is_active', true)
+      .order('name');
+    
+    if (error) throw new Error(`Failed to search gyms: ${error.message}`);
+    return data as Gym[];
+  }
+
+  async searchCoaches(query: string): Promise<Coach[]> {
+    if (!query) return this.getAllCoaches();
+    
+    const { data, error } = await supabase
+      .from('coaches')
+      .select(`
+        *,
+        users!inner(
+          first_name,
+          last_name,
+          bio,
+          specialization,
+          experience
+        )
+      `)
+      .or(`users.first_name.ilike.%${query}%,users.last_name.ilike.%${query}%,users.bio.ilike.%${query}%,users.specialization.ilike.%${query}%`)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw new Error(`Failed to search coaches: ${error.message}`);
+    return data as Coach[];
+  }
+
+  // Additional operations
+  async getAllGyms(): Promise<Gym[]> {
+    const { data, error } = await supabase
+      .from('gyms')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+    
+    if (error) throw new Error(`Failed to get all gyms: ${error.message}`);
+    return data as Gym[];
+  }
+
+  async getAllCoaches(): Promise<Coach[]> {
+    const { data, error } = await supabase
+      .from('coaches')
+      .select(`
+        *,
+        users!inner(
+          first_name,
+          last_name,
+          bio,
+          specialization,
+          experience,
+          location
+        )
+      `)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw new Error(`Failed to get all coaches: ${error.message}`);
+    return data as Coach[];
+  }
+
+  async updateGym(id: string, updates: Partial<Gym>): Promise<Gym> {
+    const { data, error } = await supabase
+      .from('gyms')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw new Error(`Failed to update gym: ${error.message}`);
+    return data as Gym;
+  }
+
+  async getCoachByUserId(userId: string): Promise<Coach | null> {
+    const { data, error } = await supabase
+      .from('coaches')
+      .select(`
+        *,
+        users!inner(
+          first_name,
+          last_name,
+          bio,
+          specialization,
+          experience,
+          location
+        )
+      `)
+      .eq('user_id', userId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw new Error(`Failed to get coach: ${error.message}`);
+    return data as Coach | null;
+  }
+
+  async getClientByUserId(userId: string): Promise<Client | null> {
+    const { data, error } = await supabase
+      .from('clients')
+      .select(`
+        *,
+        users!inner(
+          first_name,
+          last_name,
+          bio
+        )
+      `)
+      .eq('user_id', userId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw new Error(`Failed to get client: ${error.message}`);
+    return data as Client | null;
+  }
+
+  async getGymsByOwner(ownerId: string): Promise<Gym[]> {
+    const { data, error } = await supabase
+      .from('gyms')
+      .select('*')
+      .eq('owner_id', ownerId);
+    
+    if (error) throw new Error(`Failed to get gyms by owner: ${error.message}`);
+    return data as Gym[];
   }
 }
 
